@@ -303,6 +303,25 @@
     display:flex; flex-direction:column; align-items:center; gap:3px; letter-spacing:.01em; text-transform:uppercase; }
   nav.tabbar button .ic{font-size:17px;}
   nav.tabbar button.active{color:var(--yellow);}
+
+  /* ---- FOOD / SUGAR & SNACKS ---- */
+  .food-summary{display:flex; gap:9px; margin-bottom:14px;}
+  .food-sum{flex:1; border-radius:16px; padding:13px 10px; text-align:center;}
+  .food-sum .n{font-family:'Bebas Neue'; font-size:26px; line-height:1; color:var(--yellow);}
+  .food-sum .n.sugar{color:var(--red);}
+  .food-sum .l{font-size:10px; color:var(--mute); margin-top:4px; text-transform:uppercase; letter-spacing:.04em;}
+  .kind-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+  .kind-opt{padding:7px 12px; border-radius:100px; border:1px solid var(--line); background:var(--card-hi); font-size:12px; font-weight:600; color:var(--mute);}
+  .kind-opt.active{background:var(--yellow); color:#16130a; border-color:var(--yellow);}
+  .food-day-label{font-family:'Bebas Neue'; font-size:15px; color:var(--mute); margin:14px 0 7px; letter-spacing:.02em;}
+  .food-entry{border-radius:14px; padding:11px 14px; margin-bottom:9px; display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .food-entry .fe-main{min-width:0; flex:1;}
+  .food-entry .fe-name{font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .food-entry .fe-meta{font-size:11.5px; color:var(--mute); margin-top:2px; font-family:'JetBrains Mono';}
+  .food-entry .fe-sugar{font-family:'Bebas Neue'; font-size:20px; color:var(--red); flex:none;}
+  .food-entry .fe-del{background:none; border:none; color:var(--mute); font-size:15px; flex:none; padding:2px 4px;}
+  .quick-weight{display:flex; gap:8px; align-items:flex-end;}
+  .quick-weight .field{flex:1;}
 </style>
 </head>
 <body data-theme="dark">
@@ -422,6 +441,40 @@
     <div id="bodyList"></div>
   </section>
 
+  <!-- FOOD -->
+  <section class="screen" id="screen-food">
+    <h1 class="page-title">Sugar &amp; Snacks</h1>
+
+    <div class="food-summary">
+      <div class="food-sum glass"><div class="n sugar" id="foodSugarToday">0g</div><div class="l">Sugar Today</div></div>
+      <div class="food-sum glass"><div class="n" id="foodCountToday">0</div><div class="l">Snacks Today</div></div>
+      <div class="food-sum glass"><div class="n sugar" id="foodSugarWeek">0g</div><div class="l">Sugar (7d)</div></div>
+    </div>
+
+    <div class="board glass" style="padding:18px;">
+      <div class="field-grid">
+        <div class="field"><label>Date</label><input type="date" id="fDate"></div>
+        <div class="field"><label>Sugar (g)</label><input type="number" step="0.1" id="fSugar" placeholder="12"></div>
+      </div>
+      <div class="field" style="margin-bottom:12px;"><label>What did you have?</label><input type="text" id="fName" placeholder="e.g. Chocolate bar"></div>
+      <div class="kind-row" id="fKindRow"></div>
+      <button class="save-body-btn" id="saveFoodBtn" style="background:linear-gradient(135deg,var(--red),#ff9d92); color:#2a0d09;">Add Snack</button>
+    </div>
+
+    <div class="board glass" style="padding:18px;">
+      <div class="set-label" style="margin-bottom:10px;">⚖️ Daily Weight</div>
+      <div class="quick-weight">
+        <div class="field"><label>Date</label><input type="date" id="qwDate"></div>
+        <div class="field"><label>Weight (kg)</label><input type="number" step="0.1" id="qwWeight" placeholder="59.0"></div>
+        <button class="save-body-btn" id="saveWeightBtn" style="flex:none; width:auto; padding:12px 20px; margin-top:0; font-size:16px;">Log</button>
+      </div>
+      <div class="set-sub" style="margin-top:8px;">Saved to your Body entries and the weight chart on Progress.</div>
+    </div>
+
+    <h1 class="page-title" style="font-size:20px;">Log</h1>
+    <div id="foodList"></div>
+  </section>
+
   <!-- SETTINGS -->
   <section class="screen" id="screen-settings">
     <h1 class="page-title">Settings</h1>
@@ -482,6 +535,7 @@
   <button data-screen="library"><span class="ic">📚</span>Library</button>
   <button data-screen="progress"><span class="ic">📈</span>Progress</button>
   <button data-screen="body"><span class="ic">📏</span>Body</button>
+  <button data-screen="food"><span class="ic">🍎</span>Food</button>
   <button data-screen="settings"><span class="ic">⚙️</span>Settings</button>
 </nav>
 
@@ -825,6 +879,7 @@ function badge(name, big){
 const KEY_LOG = "setlist_log_v5";
 const KEY_SETTINGS = "setlist_settings_v5";
 const KEY_BODY = "setlist_body_v5";
+const KEY_FOOD = "setlist_food_v1";
 const DEFAULT_SETTINGS = { theme:'dark', voiceOn:true, soundOn:true, vibrateOn:true, notifOn:false, restDefault:30, weightKg:65 };
 
 function loadJSON(key, fallback){ try{ const v = JSON.parse(localStorage.getItem(key)); return v===null||v===undefined ? fallback : v; }catch(e){ return fallback; } }
@@ -833,10 +888,12 @@ function saveJSON(key, val){ try{ localStorage.setItem(key, JSON.stringify(val))
 let log = loadJSON(KEY_LOG, []);
 let settings = Object.assign({}, DEFAULT_SETTINGS, loadJSON(KEY_SETTINGS, {}));
 let bodyLog = loadJSON(KEY_BODY, []);
+let foodLog = loadJSON(KEY_FOOD, []);
 
 function saveLog(){ saveJSON(KEY_LOG, log); }
 function saveSettings(){ saveJSON(KEY_SETTINGS, settings); }
 function saveBody(){ saveJSON(KEY_BODY, bodyLog); }
+function saveFood(){ saveJSON(KEY_FOOD, foodLog); }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 
 /* ============================================================
@@ -880,7 +937,7 @@ document.getElementById('wtMinus').onclick = ()=>{ settings.weightKg = Math.max(
 document.getElementById('wtPlus').onclick = ()=>{ settings.weightKg = Math.min(200, settings.weightKg+1); saveSettings(); renderSettingsUI(); renderProgress(); };
 
 document.getElementById('exportBtn').onclick = ()=>{
-  const data = { log, settings, bodyLog, exportedAt: new Date().toISOString() };
+  const data = { log, settings, bodyLog, foodLog, exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -899,9 +956,10 @@ document.getElementById('importInput').onchange = (e)=>{
       showModal('Import Data', 'This will replace your current log, body entries, and settings with the imported file. Continue?', ()=>{
         if(Array.isArray(data.log)) log = data.log;
         if(Array.isArray(data.bodyLog)) bodyLog = data.bodyLog;
+        if(Array.isArray(data.foodLog)) foodLog = data.foodLog;
         if(data.settings) settings = Object.assign({}, DEFAULT_SETTINGS, data.settings);
-        saveLog(); saveBody(); saveSettings();
-        renderSettingsUI(); renderProgress(); renderBodyList();
+        saveLog(); saveBody(); saveFood(); saveSettings();
+        renderSettingsUI(); renderProgress(); renderBodyList(); renderFoodSummary(); renderFoodList();
         toast('Data imported.');
       });
     }catch(err){ toast('That file could not be read.'); }
@@ -911,9 +969,9 @@ document.getElementById('importInput').onchange = (e)=>{
 };
 document.getElementById('resetAllBtn').onclick = ()=>{
   showModal('Reset Everything', 'This clears your workout log, body entries, and settings. This cannot be undone.', ()=>{
-    log = []; bodyLog = []; settings = Object.assign({}, DEFAULT_SETTINGS);
-    saveLog(); saveBody(); saveSettings();
-    renderSettingsUI(); renderProgress(); renderBodyList();
+    log = []; bodyLog = []; foodLog = []; settings = Object.assign({}, DEFAULT_SETTINGS);
+    saveLog(); saveBody(); saveFood(); saveSettings();
+    renderSettingsUI(); renderProgress(); renderBodyList(); renderFoodSummary(); renderFoodList();
     toast('Everything was reset.');
   });
 };
@@ -1638,6 +1696,90 @@ function renderBodyList(){
 }
 
 /* ============================================================
+   FOOD / SUGAR & SNACKS + DAILY WEIGHT
+   ============================================================ */
+const FOOD_KINDS = ['Snack','Sugar','Drink','Dessert','Fruit'];
+let fKind = 'Snack';
+function renderFoodKinds(){
+  const wrap = document.getElementById('fKindRow');
+  wrap.innerHTML = '';
+  FOOD_KINDS.forEach(k=>{
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'kind-opt' + (fKind===k ? ' active':'');
+    b.textContent = k;
+    b.onclick = ()=>{ fKind = k; renderFoodKinds(); };
+    wrap.appendChild(b);
+  });
+}
+function sugarFor(dateStr){ return foodLog.filter(f=>f.date===dateStr).reduce((s,f)=> s+(parseFloat(f.sugar)||0), 0); }
+function renderFoodSummary(){
+  const today = todayStr();
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-6);
+  const sugarWeek = foodLog.filter(f=> new Date(f.date) >= weekAgo).reduce((s,f)=> s+(parseFloat(f.sugar)||0),0);
+  document.getElementById('foodSugarToday').textContent = Math.round(sugarFor(today))+'g';
+  document.getElementById('foodCountToday').textContent = foodLog.filter(f=>f.date===today).length;
+  document.getElementById('foodSugarWeek').textContent = Math.round(sugarWeek)+'g';
+}
+function renderFoodList(){
+  const wrap = document.getElementById('foodList');
+  wrap.innerHTML = '';
+  if(foodLog.length===0){ wrap.innerHTML = '<div class="empty-log">No snacks logged yet — add your first above.</div>'; return; }
+  const groups = {};
+  foodLog.forEach((f,i)=>{ (groups[f.date] = groups[f.date] || []).push({...f, _i:i}); });
+  Object.keys(groups).sort((a,b)=> b.localeCompare(a)).forEach(date=>{
+    const dayTotal = groups[date].reduce((s,f)=> s+(parseFloat(f.sugar)||0),0);
+    const label = document.createElement('div');
+    label.className = 'food-day-label';
+    label.textContent = `${date}  ·  ${Math.round(dayTotal)}g sugar`;
+    wrap.appendChild(label);
+    groups[date].forEach(f=>{
+      const el = document.createElement('div');
+      el.className = 'food-entry glass';
+      el.innerHTML = `
+        <div class="fe-main">
+          <div class="fe-name">${(f.name||f.kind).replace(/</g,'&lt;')}</div>
+          <div class="fe-meta">${f.kind}${f.time?' · '+f.time:''}</div>
+        </div>
+        <div class="fe-sugar">${f.sugar?Math.round(parseFloat(f.sugar))+'g':'—'}</div>
+        <button class="fe-del" title="Delete">🗑</button>
+      `;
+      el.querySelector('.fe-del').onclick = ()=>{
+        foodLog.splice(f._i,1); saveFood(); renderFoodList(); renderFoodSummary(); toast('Snack removed.');
+      };
+      wrap.appendChild(el);
+    });
+  });
+}
+document.getElementById('fDate').value = todayStr();
+document.getElementById('qwDate').value = todayStr();
+renderFoodKinds();
+document.getElementById('saveFoodBtn').onclick = ()=>{
+  const name = document.getElementById('fName').value.trim();
+  const sugar = document.getElementById('fSugar').value;
+  const date = document.getElementById('fDate').value || todayStr();
+  if(!name && !sugar){ toast('Add a name or a sugar amount.'); return; }
+  const time = new Date().toTimeString().slice(0,5);
+  foodLog.unshift({ date, time, name, sugar, kind:fKind });
+  saveFood();
+  document.getElementById('fName').value=''; document.getElementById('fSugar').value='';
+  renderFoodList(); renderFoodSummary();
+  toast('Snack logged.');
+};
+document.getElementById('saveWeightBtn').onclick = ()=>{
+  const weight = document.getElementById('qwWeight').value;
+  const date = document.getElementById('qwDate').value || todayStr();
+  if(!weight){ toast('Enter a weight first.'); return; }
+  const existing = bodyLog.find(b=> b.date===date);
+  if(existing){ existing.weight = weight; }
+  else { bodyLog.unshift({ date, weight, waist:'', belly:'', pain:'', rpe:'', notes:'', photo:null }); }
+  saveBody();
+  document.getElementById('qwWeight').value='';
+  renderBodyList(); renderProgress();
+  toast('Weight logged.');
+};
+
+/* ============================================================
    NAV
    ============================================================ */
 document.querySelectorAll('nav.tabbar button').forEach(btn=>{
@@ -1659,6 +1801,8 @@ renderLibFilters();
 renderLibrary();
 renderProgress();
 renderBodyList();
+renderFoodSummary();
+renderFoodList();
 </script>
 </body>
 </html>
